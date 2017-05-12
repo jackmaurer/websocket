@@ -23,6 +23,8 @@ Frame format (RFC 6455):
 
 """
 
+__all__ = ["parse_frame", "unparse_msg"]
+
 import struct
 
 def parse_frame(file):

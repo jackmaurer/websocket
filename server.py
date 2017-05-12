@@ -9,6 +9,12 @@
 # - Catch UnicodeDecodeError when decoding UTF-8 payload data and fail
 #   the connection (code 1007)
 
+__all__ = [
+    "CONNECTING", "OPEN", "CLOSING", "CLOSED",
+    "CONTINUE", "TEXT", "BINARY", "CLOSE", "PING", "PONG",
+    "WebSocketError", "WebSocketServer", "WebSocketHandler", "DemoHandler"
+]
+
 import socketserver
 import http.server
 import http
@@ -17,7 +23,7 @@ import struct
 import hashlib
 import base64
 
-import framing
+import websocket.framing
 
 CONNECTING, OPEN, CLOSING, CLOSED = range(4)
 
@@ -77,7 +83,6 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
             try:
                 self.send_handshake()
             except WebSocketError as error:
-                print("WebSocketError:", error, file=sys.stderr)
                 self.send_error(http.HTTPStatus.BAD_REQUEST, str(error))
             else:
                 self.state = OPEN
@@ -86,38 +91,35 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
                     try:
                         self.handle_frame()
                     except WebSocketError as error:
+                        self.log_error("WebSocketError: %s", error)
                         self.close(1002, str(error))
         else:
             self.send_error(http.HTTPStatus.UPGRADE_REQUIRED)
 
     def send_handshake(self):
         key = self.headers.get("Sec-WebSocket-Key", "").strip()
-        if key:
-            version = self.headers.get("Sec-WebSocket-Version", "").strip()
-            if version:
-                if version != "13":
-                    raise WebSocketError("Sec-WebSocket-Version must be 13")
-                self.send_response(http.HTTPStatus.SWITCHING_PROTOCOLS)
-                self.send_header("Upgrade", "websocket")
-                self.send_header("Connection", "Upgrade")
-                self.send_header("Sec-WebSocket-Accept", self.make_accept(key))
-                self.subprotocols = []
-                for value in self.headers.get_all("Sec-WebSocket-Protocol",
-                                                   []):
-                    for s in value.split(","):
-                        s = s.strip()
-                        if s in self.supported_subprotocols:
-                            self.subprotocols.append(s)
-                if self.subprotocols:
-                    self.send_header("Sec-WebSocket-Protocol",
-                                     ", ".join(self.subprotocols))
-                self.end_headers()
-                # TODO: Origin verification
-            else:
-                raise WebSocketError("Client must include "
-                                     "Sec-WebSocket-Version")
-        else:
+        if not key:
             raise WebSocketError("Client must include Sec-WebSocket-Key")
+        version = self.headers.get("Sec-WebSocket-Version", "").strip()
+        if not version:
+            raise WebSocketError("client must include Sec-WebSocket-Version")
+        elif version != "13":
+            raise WebSocketError("Sec-WebSocket-Version must be 13")
+        self.send_response(http.HTTPStatus.SWITCHING_PROTOCOLS)
+        self.send_header("Upgrade", "websocket")
+        self.send_header("Connection", "Upgrade")
+        self.send_header("Sec-WebSocket-Accept", self.make_accept(key))
+        self.subprotocols = []
+        for value in self.headers.get_all("Sec-WebSocket-Protocol", []):
+            for s in value.split(","):
+                s = s.strip()
+                if s in self.supported_subprotocols:
+                    self.subprotocols.append(s)
+        if self.subprotocols:
+            self.send_header("Sec-WebSocket-Protocol",
+                             ", ".join(self.subprotocols))
+        self.end_headers()
+        # TODO: Origin verification
 
     def handle_frame(self):
         self.parse_frame()
@@ -132,7 +134,7 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
         elif self.opcode == CLOSE:
             self.reason = ""
             if self.data:
-                self.code = struct.unpack("!H", self.data[0:2])
+                self.code = struct.unpack("!H", self.data[0:2])[0]
                 if len(self.data) > 2:
                     self.reason = self.data[2:].decode()
             else:
@@ -147,7 +149,7 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
             raise WebSocketError("unknown opcode: {}".format(hex(self.opcode)))
 
     def parse_frame(self):
-        parts = framing.parse_frame(self.rfile)
+        parts = websocket.framing.parse_frame(self.rfile)
         if not parts["mask"]:
             raise WebSocketError("Messages from the client to the server must "
                                  "be masked")
@@ -155,7 +157,9 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
             setattr(self, name, parts[name])
 
     def send_message(self, opcode, data, fin=1, rsv1=0, rsv2=0, rsv3=0):
-        framing.unparse_msg(self.wfile, opcode, data, fin, rsv1, rsv2, rsv3)
+        websocket.framing.unparse_msg(
+            self.wfile, opcode, data, fin, rsv1, rsv2, rsv3
+        )
 
     def setup(self):
         http.server.BaseHTTPRequestHandler.setup(self)
