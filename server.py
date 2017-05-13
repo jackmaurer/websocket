@@ -4,10 +4,6 @@
 # - Extensions
 #   - Sec-WebSocket-Extensions header
 #   - Extension data
-#
-# TODO:
-# - Catch UnicodeDecodeError when decoding UTF-8 payload data and fail
-#   the connection (code 1007)
 
 __all__ = [
     "CONNECTING", "OPEN", "CLOSING", "CLOSED",
@@ -42,6 +38,10 @@ class WebSocketServer(socketserver.ThreadingTCPServer):
 class WebSocketHandler(http.server.BaseHTTPRequestHandler):
     """Handler for WebSocket requests"""
     supported_subprotocols =  []
+
+    def handle_open(self):
+        """Called following a successful handshake"""
+        pass
 
     def handle_text(self):
         """Called when a textual data frame is received"""
@@ -127,7 +127,10 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
             # RFE: Message fragmentation
             pass
         elif self.opcode == TEXT:
-            self.data = self.data.decode()
+            try:
+                self.data = self.data.decode()
+            except UnicodeDecodeError:
+                self.close(1007)
             self.handle_text()
         elif self.opcode == BINARY:
             self.handle_bin()
@@ -136,7 +139,10 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
             if self.data:
                 self.code = struct.unpack("!H", self.data[0:2])[0]
                 if len(self.data) > 2:
-                    self.reason = self.data[2:].decode()
+                    try:
+                        self.reason = self.data[2:].decode()
+                    except UnicodeDecodeError:
+                        self.close(1007)
             else:
                 self.code = None
             if self.state == OPEN:
@@ -146,13 +152,15 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
         elif self.opcode == PONG:
             pass
         else:
-            raise WebSocketError("unknown opcode: {}".format(hex(self.opcode)))
+            raise WebSocketError(
+                "unknown opcode: {}".format(hex(self.opcode))
+            )
 
     def parse_frame(self):
         parts = websocket.framing.parse_frame(self.rfile)
         if not parts["mask"]:
-            raise WebSocketError("Messages from the client to the server must "
-                                 "be masked")
+            raise WebSocketError("Messages from the client to the server "
+                                 "must be masked")
         for name in parts:
             setattr(self, name, parts[name])
 

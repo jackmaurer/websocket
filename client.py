@@ -1,4 +1,4 @@
 """Extensible WebSocket Client"""
 
-import framing
-import server
+import websocket.framing
+import websocket.server

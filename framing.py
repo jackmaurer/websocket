@@ -63,7 +63,7 @@ def parse_frame(file):
     return parts
 
 def unparse_msg(file, opcode, data, fin, rsv1, rsv2, rsv3, mask=0,
-                  masking_key=None):
+                masking_key=None):
     """Encode a message and write it to a file-like object"""
     frame = bytearray()
     frame.append(fin << 7 | rsv1 << 6 | rsv2 << 5 | rsv3 << 4 | opcode)
