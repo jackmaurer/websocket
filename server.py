@@ -22,11 +22,13 @@ import base64
 import websocket.framing
 
 CONNECTING, OPEN, CLOSING, CLOSED = range(4)
+# Handler states
 
 CONTINUE, TEXT, BINARY, CLOSE, PING, PONG = 0x0, 0x1, 0x2, 0x8, 0x9, 0xa
+# Opcodes
 
 class WebSocketError(Exception):
-    """Protocol breach by the client"""
+    """Protocol breach by the client."""
     pass
 
 class WebSocketServer(socketserver.ThreadingTCPServer):
@@ -60,7 +62,7 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
         self.send_message(BINARY, data, **kwargs)
 
     def close(self, code=None, reason="", **kwargs):
-        """Close the connection
+        """Close the connection.
 
         For a list of status codes and their meanings, see
         https://tools.ietf.org/html/rfc6455#section-7.4.1
@@ -73,6 +75,7 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
             data = b""
         self.send_message(CLOSE, data, **kwargs)
         if self.opcode != CLOSE:
+            # The closing handshake was initiated by the server (us)
             self.handle_message()
 
     def do_GET(self):
@@ -85,6 +88,7 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
             except WebSocketError as error:
                 self.send_error(http.HTTPStatus.BAD_REQUEST, str(error))
             else:
+                # Request is kosher; begin receiving messages
                 self.state = OPEN
                 self.server.handlers.append(self)
                 while self.state == OPEN:
@@ -97,12 +101,13 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
             self.send_error(http.HTTPStatus.UPGRADE_REQUIRED)
 
     def send_handshake(self):
+        """Respond to an opening handshake."""
         key = self.headers.get("Sec-WebSocket-Key", "").strip()
         if not key:
             raise WebSocketError("Client must include Sec-WebSocket-Key")
         version = self.headers.get("Sec-WebSocket-Version", "").strip()
         if not version:
-            raise WebSocketError("client must include Sec-WebSocket-Version")
+            raise WebSocketError("Client must include Sec-WebSocket-Version")
         elif version != "13":
             raise WebSocketError("Sec-WebSocket-Version must be 13")
         self.send_response(http.HTTPStatus.SWITCHING_PROTOCOLS)
@@ -115,6 +120,7 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
                 s = s.strip()
                 if s in self.supported_subprotocols:
                     self.subprotocols.append(s)
+        # Use all supported subprotocols from the request
         if self.subprotocols:
             self.send_header("Sec-WebSocket-Protocol",
                              ", ".join(self.subprotocols))
@@ -122,6 +128,7 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
         # TODO: Origin verification
 
     def handle_frame(self):
+        """Receive and process an individual frame."""
         self.parse_frame()
         if self.opcode == CONTINUE:
             # RFE: Message fragmentation
@@ -163,6 +170,7 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
                                  "must be masked")
         for name in parts:
             setattr(self, name, parts[name])
+            # self.foo = parts["foo"]
 
     def send_message(self, opcode, data, fin=1, rsv1=0, rsv2=0, rsv3=0):
         websocket.framing.unparse_msg(
@@ -183,9 +191,9 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
     def make_accept(key):
         """Generate the value of the Sec-WebSocket-Accept header field
 
-        This is done by concatenating the value of the Sec-WebSocket-Key
-        header field with a Globally Unique Indentifier (GUID) and
-        taking the base64-encoded SHA1 hash of this value.
+        This is done by concatenating the Sec-WebSocket-Key value with
+        a Globally Unique Indentifier (GUID) and taking the base64-
+        encoded SHA1 hash of this value.
 
         """
         guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
