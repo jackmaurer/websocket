@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-__version__ = "0.1"
+__version__ = "0.2"
 __author__ = "Jack Maurer"
 
 from distutils.core import setup
 
 setup(name="websocket",
-      version="0.1",
+      version="0.2",
       author="Jack Maurer",
       author_email="jackmaurer@users.noreply.github.com",
       license="MIT License",
