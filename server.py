@@ -1,4 +1,4 @@
-"""Extensible WebSocket Server"""
+"""Extensible WebSocket server"""
 
 # RFE:
 # - Extensions
@@ -94,6 +94,7 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
                 self.state = OPEN
                 self.msg = []
                 self.server.handlers.append(self)
+                self.handle_open()
                 while self.state == OPEN:
                     try:
                         self.handle_frame()
@@ -172,6 +173,7 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
             raise WebSocketError(
                 "unknown opcode: {}".format(hex(self.msg.opcode))
             )
+        print("{} - {}".format(self.client_address[0], repr(self.frame.data)))
         if self.frame.fin:
             self.msg = []
 

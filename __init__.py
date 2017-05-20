@@ -1,10 +1,9 @@
-"""Extensible WebSocket server and client
+"""Extensible WebSocket server
 
-This package contains 3 modules:
+This package contains 2 modules:
 
 * framing - Base framing protocol implementation
 * server - WebSocket server
-* client - WebSocket client (incomplete)
 
 MIT License
 
