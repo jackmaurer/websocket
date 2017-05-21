@@ -7,10 +7,9 @@
 
 __all__ = [
     "CONNECTING", "OPEN", "CLOSING", "CLOSED",
-    "WebSocketError", "WebSocketServer", "WebSocketHandler", "DemoHandler"
+    "WebSocketError", "WebSocketHandler", "DemoHandler"
 ]
 
-import socketserver
 import http.server
 import http
 import sys
@@ -26,12 +25,6 @@ CONNECTING, OPEN, CLOSING, CLOSED = range(4)
 class WebSocketError(Exception):
     """Protocol breach by the client."""
     pass
-
-class WebSocketServer(socketserver.ThreadingTCPServer):
-    """Multithreaded TCP server that keeps track of clients"""
-    def __init__(self, *args, **kwargs):
-        self.handlers = []
-        socketserver.ThreadingTCPServer.__init__(self, *args, **kwargs)
 
 class WebSocketHandler(http.server.BaseHTTPRequestHandler):
     """Handler for WebSocket requests"""
@@ -93,7 +86,6 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
                 # Request is kosher; begin receiving messages
                 self.state = OPEN
                 self.msg = []
-                self.server.handlers.append(self)
                 self.handle_open()
                 while self.state == OPEN:
                     try:
@@ -195,8 +187,6 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
     def finish(self):
         http.server.BaseHTTPRequestHandler.finish(self)
         self.state = CLOSED
-        if self in self.server.handlers:
-            self.server.handlers.remove(self)
 
     @staticmethod
     def make_accept(key):
@@ -218,7 +208,8 @@ class DemoHandler(WebSocketHandler):
         self.send_bin(self.data)
 
 if __name__ == "__main__":
-    HOST, PORT = ("localhost", 8000)
-    with WebSocketServer((HOST, PORT), DemoHandler) as server:
+    from socketserver import ThreadingTCPServer
+
+    with ThreadingTCPServer(("localhost", 8000), DemoHandler) as server:
         print("Serving on port", PORT)
         server.serve_forever()
