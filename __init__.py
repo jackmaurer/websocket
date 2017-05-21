@@ -1,7 +1,6 @@
 """Extensible WebSocket server
 
-This package contains 2 modules:
-
+This package contains two modules:
 * framing - Base framing protocol implementation
 * server - WebSocket server
 

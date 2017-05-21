@@ -4,6 +4,8 @@
 # - Extensions
 #   - Sec-WebSocket-Extensions header
 #   - Extension data
+#
+# IDEA: Could easily be ported to a WSGI application...
 
 __all__ = [
     "CONNECTING", "OPEN", "CLOSING", "CLOSED",
@@ -74,10 +76,7 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
             self.handle_message()
 
     def do_GET(self):
-        if (self.headers.get("Upgrade", "").strip().lower()
-                == "websocket"
-                and self.headers.get("Connection", "").strip().lower()
-                == "upgrade"):
+        if self.is_handshake():
             try:
                 self.send_handshake()
             except WebSocketError as error:
@@ -95,6 +94,15 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
                         self.close(1002, str(error))
         else:
             self.send_error(http.HTTPStatus.UPGRADE_REQUIRED)
+            # IDEA: Should this send a different error if there is an
+            # upgrade header but its value is not 'websocket'
+
+    def is_handshake(self):
+        """Determine whether the request is a WebSocket handshake"""
+        return (self.headers.get("Upgrade", "").strip().lower()
+                == "websocket"
+                and self.headers.get("Connection", "").strip().lower()
+                == "upgrade") # should header names be lowercase?
 
     def send_handshake(self):
         """Respond to an opening handshake."""
@@ -211,5 +219,5 @@ if __name__ == "__main__":
     from socketserver import ThreadingTCPServer
 
     with ThreadingTCPServer(("localhost", 8000), DemoHandler) as server:
-        print("Serving on port", PORT)
+        print("Serving on port 8000...")
         server.serve_forever()
