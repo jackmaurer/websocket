@@ -1,8 +1,8 @@
 """Extensible WebSocket server
 
-This package contains two modules:
-* framing - Base framing protocol implementation
-* server - WebSocket server
+Modules:
+    framing: Base framing protocol implementation
+    server: WebSocket server
 
 MIT License
 

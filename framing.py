@@ -21,6 +21,29 @@ Frame format (RFC 6455):
      |                     Payload Data continued ...                |
      +---------------------------------------------------------------+
 
+
+MIT License
+
+Copyright (c) 2017 Jack Maurer
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
 """
 
 __all__ = ["CONTINUE", "TEXT", "BINARY", "CLOSE", "PING", "PONG",
@@ -32,6 +55,20 @@ CONTINUE, TEXT, BINARY, CLOSE, PING, PONG = 0x0, 0x1, 0x2, 0x8, 0x9, 0xa
 # Opcodes
 
 class WebSocketFrame(object):
+    """An individual frame.
+
+    Attributes:
+        fin: A binary digit indicating whether the frame is the final
+            fragment of a message.
+        rsv1, rsv2, rsv3: Binary digits representing the values of the
+            three reserved bits.
+        mask: A binary digit indicating whether the payload data should
+            be masked or not.
+        masking_key: A four-character bytes-like object used to mask
+            the payload data.
+        data: A bytes-like object containing payload data.
+
+    """
     def __init__(self, opcode=None, data=None, fin=1, rsv1=0, rsv2=0, rsv3=0,
                  mask=0, masking_key=None):
         self.fin = fin
@@ -58,7 +95,15 @@ class WebSocketFrame(object):
         return frame
 
 def parse_frame(file):
-    """Read and decode a frame from a file-like object"""
+    """Read and decode a frame from a file-like object
+
+    Args:
+        file: A file-like object from which to read the frame
+
+    Returns:
+        A WebSocketFrame instance
+
+    """
     frame = WebSocketFrame()
     raw_frame = bytearray()
     raw_frame.extend(file.read(2))

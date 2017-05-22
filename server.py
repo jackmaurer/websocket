@@ -1,4 +1,28 @@
-"""Extensible WebSocket server"""
+"""WebSocket server classes
+
+MIT License
+
+Copyright (c) 2017 Jack Maurer
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+"""
 
 # RFE:
 # - Extensions
@@ -29,9 +53,19 @@ class WebSocketError(Exception):
     pass
 
 class WebSocketHandler(http.server.BaseHTTPRequestHandler):
-    """Handler for WebSocket requests"""
-    supported_subprotocols =  []
+    """Handler for WebSocket requests
 
+    Attributes:
+        state: An integer value indicating the present state of the
+            handler instance.
+        msg: A list of zero or more frames in the incoming message
+            that is currently being processed.
+        supported_subprotocols: A list of subprotocols supported by the
+            handler class.
+        subprotocols: A list of the subprotocols being used by the
+            handler instance.
+
+    """
     def handle_open(self):
         """Called following a successful handshake"""
         pass
@@ -45,22 +79,45 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
         pass
 
     def send_text(self, data, **kwargs):
-        """Send a textual data frame"""
-        frame = websocket.framing.WebSocketFrame(websocket.framing.TEXT,
-                                                 data.encode(), **kwargs)
-        self.send_message([frame])
+        """Send a textual data frame
+
+        Args:
+            data: A UTF-8 string containing payload data
+            **kwargs: Keyword arguments to pass to
+                websocket.framing.WebSocketFrame constructor
+
+        """
+        frame = websocket.framing.WebSocketFrame(
+            websocket.framing.TEXT, data.encode(), **kwargs
+        )
+        self.send_message((frame,))
 
     def send_bin(self, data, **kwargs):
-        """Send a binary data frame"""
-        frame = websocket.framing.WebSocketFrame(websocket.framing.BINARY,
-                                                 data, **kwargs)
-        self.send_message([frame])
+        """Send a binary data frame
+
+        Args:
+            data: A bytes-like object containing payload data
+            **kwargs: Keyword arguments to pass to
+                websocket.framing.WebSocketFrame constructor
+
+        """
+        frame = websocket.framing.WebSocketFrame(
+            websocket.framing.BINARY, data, **kwargs
+        )
+        self.send_message((frame,))
 
     def close(self, code=None, reason="", **kwargs):
         """Close the connection.
 
         For a list of status codes and their meanings, see
         https://tools.ietf.org/html/rfc6455#section-7.4.1
+
+        Args:
+            code: A status code to send the client (optional)
+            reason: A UTF-8 string containing a reason for closing the
+                connection (optional)
+            **kwargs: Keyword arguments to pass to
+                websocket.framing.WebSocketFrame constructor
 
         """
         self.state = CLOSING
@@ -70,7 +127,7 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
             data = b""
         frame = websocket.framing.WebSocketFrame(websocket.framing.CLOSE,
                                                  data, **kwargs)
-        self.send_message([frame])
+        self.send_message((frame,))
         if not self.msg or self.msg[0].opcode != websocket.framing.CLOSE:
             # The closing handshake was initiated by the server (us)
             self.handle_message()
@@ -98,14 +155,18 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
             # upgrade header but its value is not 'websocket'
 
     def is_handshake(self):
-        """Determine whether the request is a WebSocket handshake"""
         return (self.headers.get("Upgrade", "").strip().lower()
                 == "websocket"
                 and self.headers.get("Connection", "").strip().lower()
                 == "upgrade") # should header names be lowercase?
 
     def send_handshake(self):
-        """Respond to an opening handshake."""
+        """Respond to an opening handshake
+
+        Raises:
+            WebSocketError: Invalid request headers
+
+        """
         key = self.headers.get("Sec-WebSocket-Key", "").strip()
         if not key:
             raise WebSocketError("Client must include Sec-WebSocket-Key")
@@ -131,8 +192,15 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         # TODO: Origin verification
 
+    supported_subprotocols = []
+
     def handle_frame(self):
-        """Receive and process an individual frame."""
+        """Receive and process an individual frame.
+
+        Raises:
+            WebSocketError: Invalid frame format
+
+        """
         self.parse_frame()
         if (len(self.msg) > 1
                 and self.frame.opcode != websocket.framing.CONTINUE):
@@ -198,11 +266,11 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
 
     @staticmethod
     def make_accept(key):
-        """Generate the value of the Sec-WebSocket-Accept header field
+        """Generate the accept value corresponding to a given key
 
-        This is done by concatenating the Sec-WebSocket-Key value with
-        a Globally Unique Indentifier (GUID) and taking the base64-
-        encoded SHA1 hash of this value.
+        Args:
+            key: The value of the Sec-WebSocket-Key request header
+                field
 
         """
         guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
