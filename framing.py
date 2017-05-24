@@ -1,3 +1,27 @@
+# MIT License
+#
+# Copyright (c) 2017 Jack Maurer
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """Functions for encoding and decoding data in the WebSocket protocol
 
 Frame format (RFC 6455):
@@ -20,29 +44,6 @@ Frame format (RFC 6455):
      + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
      |                     Payload Data continued ...                |
      +---------------------------------------------------------------+
-
-
-MIT License
-
-Copyright (c) 2017 Jack Maurer
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 
 """
 
@@ -81,7 +82,12 @@ class WebSocketFrame(object):
         self.data = data
 
     def unparse(self):
-        """Encode to a bytearrray object"""
+        """Encode to a bytearrray object
+
+        Returns:
+            A bytearray object containing the encoded frame
+
+        """
         frame = bytearray()
         frame.append(self.fin << 7
                      | self.rsv1 << 6
@@ -95,13 +101,13 @@ class WebSocketFrame(object):
         return frame
 
 def parse_frame(file):
-    """Read and decode a frame from a file-like object
+    """Read and decode a frame from a file-like object.
 
     Args:
-        file: A file-like object from which to read the frame
+        file: A file-like object from which to read the frame.
 
     Returns:
-        A WebSocketFrame instance
+        A WebSocketFrame instance.
 
     """
     frame = WebSocketFrame()

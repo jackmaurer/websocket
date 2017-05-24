@@ -1,28 +1,28 @@
-"""WebSocket server classes
+# MIT License
+#
+# Copyright (c) 2017 Jack Maurer
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
-MIT License
-
-Copyright (c) 2017 Jack Maurer
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-"""
+"""WebSocket server classes."""
 
 # RFE:
 # - Extensions
@@ -38,7 +38,6 @@ __all__ = [
 
 import http.server
 import http
-import sys
 import struct
 import hashlib
 import base64
@@ -53,12 +52,12 @@ class WebSocketError(Exception):
     pass
 
 class WebSocketHandler(http.server.BaseHTTPRequestHandler):
-    """Handler for WebSocket requests
+    """Handler for WebSocket requests.
 
     Attributes:
         state: An integer value indicating the present state of the
             handler instance.
-        msg: A list of zero or more frames in the incoming message
+        msg: A list of zero or more frames of the incoming message
             that is currently being processed.
         supported_subprotocols: A list of subprotocols supported by the
             handler class.
@@ -67,24 +66,24 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
 
     """
     def handle_open(self):
-        """Called following a successful handshake"""
+        """Called following a successful handshake."""
         pass
 
     def handle_text(self):
-        """Called when a textual data frame is received"""
+        """Called when a textual data frame is received."""
         pass
 
     def handle_bin(self):
-        """Called when a binary data frame is received"""
+        """Called when a binary data frame is received."""
         pass
 
     def send_text(self, data, **kwargs):
-        """Send a textual data frame
+        """Send a textual data frame.
 
         Args:
-            data: A UTF-8 string containing payload data
+            data: A UTF-8 string containing payload data.
             **kwargs: Keyword arguments to pass to
-                websocket.framing.WebSocketFrame constructor
+                websocket.framing.WebSocketFrame constructor.
 
         """
         frame = websocket.framing.WebSocketFrame(
@@ -93,12 +92,12 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
         self.send_message((frame,))
 
     def send_bin(self, data, **kwargs):
-        """Send a binary data frame
+        """Send a binary data frame.
 
         Args:
-            data: A bytes-like object containing payload data
+            data: A bytes-like object containing payload data.
             **kwargs: Keyword arguments to pass to
-                websocket.framing.WebSocketFrame constructor
+                websocket.framing.WebSocketFrame constructor.
 
         """
         frame = websocket.framing.WebSocketFrame(
@@ -113,11 +112,11 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
         https://tools.ietf.org/html/rfc6455#section-7.4.1
 
         Args:
-            code: A status code to send the client (optional)
+            code: A status code to send the client (optional).
             reason: A UTF-8 string containing a reason for closing the
-                connection (optional)
+                connection (optional).
             **kwargs: Keyword arguments to pass to
-                websocket.framing.WebSocketFrame constructor
+                websocket.framing.WebSocketFrame constructor.
 
         """
         self.state = CLOSING
@@ -161,10 +160,10 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
                 == "upgrade") # should header names be lowercase?
 
     def send_handshake(self):
-        """Respond to an opening handshake
+        """Respond to an opening handshake.
 
         Raises:
-            WebSocketError: Invalid request headers
+            WebSocketError: Invalid request headers.
 
         """
         key = self.headers.get("Sec-WebSocket-Key", "").strip()
@@ -198,7 +197,7 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
         """Receive and process an individual frame.
 
         Raises:
-            WebSocketError: Invalid frame format
+            WebSocketError: Invalid frame format.
 
         """
         self.parse_frame()
@@ -266,26 +265,17 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
 
     @staticmethod
     def make_accept(key):
-        """Generate the accept value corresponding to a given key
+        """Generate the accept value corresponding to a given key.
 
         Args:
             key: The value of the Sec-WebSocket-Key request header
-                field
+                field.
+
+        Returns:
+            A base64-encoded string representing the value of the
+            Sec-WebSocket-Accept response header field.
 
         """
         guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
         sha1 = hashlib.sha1((key + guid).encode()).digest()
         return base64.b64encode(sha1).decode()
-
-class DemoHandler(WebSocketHandler):
-    def handle_text(self):
-        self.send_text(self.data)
-    def handle_bin(self):
-        self.send_bin(self.data)
-
-if __name__ == "__main__":
-    from socketserver import ThreadingTCPServer
-
-    with ThreadingTCPServer(("localhost", 8000), DemoHandler) as server:
-        print("Serving on port 8000...")
-        server.serve_forever()
