@@ -52,7 +52,7 @@ class WebSocketError(Exception):
     pass
 
 class WebSocketHandler(http.server.BaseHTTPRequestHandler):
-    """Handler for WebSocket requests.
+    """Base handler class for WebSocket requests.
 
     Attributes:
         state: An integer value indicating the present state of the
@@ -82,7 +82,7 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
 
         Args:
             data: A UTF-8 string containing payload data.
-            **kwargs: Keyword arguments to pass to
+            **kwargs: Keyword arguments to pass to the
                 websocket.framing.WebSocketFrame constructor.
 
         """
@@ -96,8 +96,8 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
 
         Args:
             data: A bytes-like object containing payload data.
-            **kwargs: Keyword arguments to pass to
-                websocket.framing.WebSocketFrame constructor.
+            **kwargs: Keyword arguments to pass to the
+                websocket.websocket.framing.WebSocketFrame constructor.
 
         """
         frame = websocket.framing.WebSocketFrame(
@@ -115,7 +115,7 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
             code: A status code to send the client (optional).
             reason: A UTF-8 string containing a reason for closing the
                 connection (optional).
-            **kwargs: Keyword arguments to pass to
+            **kwargs: Keyword arguments to pass to the
                 websocket.framing.WebSocketFrame constructor.
 
         """
@@ -200,7 +200,10 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
             WebSocketError: Invalid frame format.
 
         """
-        self.parse_frame()
+        try:
+            self.parse_frame()
+        except IndexError:
+            raise
         if (len(self.msg) > 1
                 and self.frame.opcode != websocket.framing.CONTINUE):
             raise WebSocketError(
@@ -256,11 +259,11 @@ class WebSocketHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(frame.unparse())
 
     def setup(self):
-        http.server.BaseHTTPRequestHandler.setup(self)
+        super().setup()
         self.state = CONNECTING
 
     def finish(self):
-        http.server.BaseHTTPRequestHandler.finish(self)
+        super().finish()
         self.state = CLOSED
 
     @staticmethod

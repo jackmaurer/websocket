@@ -22,7 +22,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Functions for encoding and decoding data in the WebSocket protocol
+"""Functions for encoding and decoding data in the WebSocket protocol.
 
 Frame format (RFC 6455):
 

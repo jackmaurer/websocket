@@ -1,2 +1,2 @@
 # websocket
-Extensible WebSocket server and client
+Extensible WebSocket server

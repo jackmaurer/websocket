@@ -24,6 +24,6 @@
 
 """Extensible WebSocket server.
 
-See example.py for code samples.
+See examples.py for code samples.
 
 """

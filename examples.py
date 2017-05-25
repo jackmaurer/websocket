@@ -38,16 +38,20 @@ class EchoHandler(websocket.server.WebSocketHandler):
         self.send_bin(self.data)
 
 def run():
-    """Bind an echo server to localhost:8000."""
-    # Deployment is the same as with http.server. Note that, due to the
-    # persistent nature of connections in the WebSocket protocol, it is
-    # advised that you use a multithreaded server for your applications.
+    """Bind an echo server to localhost:8000.
+
+    Deployment is the same as with http.server. Note that, due to the
+    persistent nature of connections in the WebSocket protocol, it is
+    advised that you use a multithreaded server for your applications.
+
+    """
     HOST, PORT = "localhost", 8000
-    with ThreadingTCPServer((HOST, PORT), DemoHandler) as server:
+    with ThreadingTCPServer((HOST, PORT), EchoHandler) as server:
         print("Serving on port", PORT)
         server.serve_forever()
 
-if __name__ == "__main__": run()
+if __name__ == "__main__":
+    run()
 
 # Here's an example of a reverse proxy that serves both HTTP and
 # WebSocket requests by detecting WebSocket handshakes and invoking
